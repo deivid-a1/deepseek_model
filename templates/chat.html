@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat com DeepSeek Coder</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f8fa;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        header {
+            background-color: #007bff;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 1rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .status-bar {
+            background-color: #f1f3f5;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #495057;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .status-bar.connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status-bar.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        #clear-chat {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 0.3rem;
+            padding: 0.3rem 0.6rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        #clear-chat:hover {
+            background-color: #c82333;
+        }
+        #chat-window {
+            flex: 1;
+            border: 1px solid #ddd;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            overflow-y: auto;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            max-height: 60vh;
+        }
+        .chat-message {
+            margin-bottom: 1rem;
+            padding: 0.8rem;
+            border-radius: 0.5rem;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        .user-message {
+            background-color: #007bff;
+            color: white;
+            margin-left: auto;
+            margin-right: 0;
+        }
+        .bot-message {
+            background-color: #e9ecef;
+            color: #212529;
+            margin-right: auto;
+            margin-left: 0;
+        }
+        .system-message {
+            background-color: #ffc107;
+            color: #212529;
+            margin: 0 auto;
+            text-align: center;
+            font-style: italic;
+            max-width: 100%;
+        }
+        .message-time {
+            font-size: 0.7rem;
+            color: rgba(0,0,0,0.5);
+            text-align: right;
+            margin-top: 0.3rem;
+        }
+        #input-area {
+            display: flex;
+            gap: 0.5rem;
+        }
+        #message-input {
+            flex: 1;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            resize: none;
+        }
+        #send-btn {
+            padding: 0.8rem 1.5rem;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.2s;
+        }
+        #send-btn:hover {
+            background-color: #0069d9;
+        }
+        #send-btn:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        pre {
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 0.3rem;
+            padding: 0.5rem;
+            overflow-x: auto;
+            font-size: 0.9rem;
+            margin: 0.5rem 0;
+        }
+        code {
+            font-family: 'Courier New', monospace;
+        }
+        footer {
+            text-align: center;
+            padding: 1rem;
+            background-color: #f1f3f5;
+            color: #6c757d;
+            font-size: 0.8rem;
+            margin-top: auto;
+        }
+        .loading {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 0.5rem;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .code-block {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 0.3rem;
+            padding: 0.5rem;
+            margin: 0.5rem 0;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Chat com DeepSeek Coder</h1>
+    </header>
+    
+    <main>
+        <div id="status-bar" class="status-bar">
+            <span id="status-text">Conectando ao servidor...</span>
+            <button id="clear-chat">Limpar Conversa</button>
+        </div>
+        <div id="chat-window"></div>
+        <div id="input-area">
+            <textarea id="message-input" placeholder="Digite sua mensagem aqui..." rows="3"></textarea>
+            <button id="send-btn" disabled>Enviar</button>
+        </div>
+    </main>
+    
+    <footer>
+        DeepSeek Coder Chat &copy; 2025
+    </footer>
+
+    <script>
+        const statusBar = document.getElementById('status-bar');
+        const statusText = document.getElementById('status-text');
+        const chatWindow = document.getElementById('chat-window');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-btn');
+        const clearChatButton = document.getElementById('clear-chat');
+        
+        let socket;
+        let isProcessing = false;
+        
+        // Função para conectar ao WebSocket
+        function connect() {
+            // Determinar o endereço do websocket
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${wsProtocol}//${window.location.host}/ws`;
+            
+            statusText.textContent = 'Conectando ao servidor...';
+            statusBar.className = 'status-bar';
+            
+            socket = new WebSocket(wsUrl);
+            
+            socket.onopen = () => {
+                statusText.textContent = 'Conectado';
+                statusBar.className = 'status-bar connected';
+                sendButton.disabled = false;
+            };
+            
+            socket.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                
+                if (data.sender === 'system') {
+                    addSystemMessage(data.message);
+                } else if (data.sender === 'bot') {
+                    isProcessing = false;
+                    sendButton.textContent = 'Enviar';
+                    addBotMessage(data.message, data.time);
+                }
+            };
+            
+            socket.onclose = () => {
+                statusText.textContent = 'Desconectado. Tentando reconectar em 5s...';
+                statusBar.className = 'status-bar disconnected';
+                sendButton.disabled = true;
+                
+                setTimeout(connect, 5000);
+            };
+            
+            socket.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                addSystemMessage('Erro de conexão. Verifique o console para detalhes.');
+            };
+        }
+        
+        // Função para adicionar mensagem do usuário
+        function addUserMessage(message) {
+            const messageElement = document.createElement('div');
+            messageElement.className = 'chat-message user-message';
+            
+            // Converter quebras de linha para HTML
+            const formattedMessage = message.replace(/\n/g, '<br>');
+            messageElement.innerHTML = formattedMessage;
+            
+            chatWindow.appendChild(messageElement);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+        
+        // Função para adicionar mensagem do bot
+        function addBotMessage(message, time) {
+            const messageElement = document.createElement('div');
+            messageElement.className = 'chat-message bot-message';
+            
+            // Processar código (texto entre ```)
+            let formattedMessage = message;
+            
+            // Substituir blocos de código
+            formattedMessage = formattedMessage.replace(/```(.*?)\n([\s\S]*?)```/g, function(match, language, code) {
+                return `<div class="code-block"><strong>${language}</strong><pre><code>${code}</code></pre></div>`;
+            });
+            
+            // Substituir texto inline com ` por <code>
+            formattedMessage = formattedMessage.replace(/`([^`]+)`/g, '<code>$1</code>');
+            
+            // Converter quebras de linha para HTML
+            formattedMessage = formattedMessage.replace(/\n/g, '<br>');
+            
+            messageElement.innerHTML = formattedMessage;
+            
+            // Adicionar tempo de resposta
+            if (time) {
+                const timeElement = document.createElement('div');
+                timeElement.className = 'message-time';
+                timeElement.textContent = `Resposta em ${time}s`;
+                messageElement.appendChild(timeElement);
+            }
+            
+            chatWindow.appendChild(messageElement);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+        
+        // Função para adicionar mensagem do sistema
+        function addSystemMessage(message) {
+            const messageElement = document.createElement('div');
+            messageElement.className = 'chat-message system-message';
+            messageElement.textContent = message;
+            
+            chatWindow.appendChild(messageElement);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+        
+        // Evento para enviar mensagem
+        sendButton.addEventListener('click', () => {
+            sendMessage();
+        });
+        
+        // Permitir envio com Enter (mas Shift+Enter para nova linha)
+        messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        
+        // Botão para limpar conversa
+        clearChatButton.addEventListener('click', () => {
+            // Limpar conversa no cliente
+            chatWindow.innerHTML = '';
+            
+            // Enviar comando para limpar histórico no servidor
+            socket.send(JSON.stringify({ message: "/limpar" }));
+            
+            // Adicionar mensagem do sistema
+            addSystemMessage("Conversa limpa. Iniciando novo chat...");
+        });
+        
+        // Função para enviar mensagem
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            
+            if (message && !isProcessing) {
+                isProcessing = true;
+                addUserMessage(message);
+                messageInput.value = '';
+                
+                // Atualizar botão com indicador de processamento
+                sendButton.innerHTML = 'Processando <span class="loading"></span>';
+                
+                // Enviar para o servidor
+                socket.send(JSON.stringify({ message: message }));
+            }
+        }
+        
+        // Iniciar conexão
+        connect();
+    </script>
+</body>
+</html>
